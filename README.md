@@ -47,3 +47,11 @@ QREASON_PROVIDER_IDS=home2 node apply-all.cjs   # 应用时把所有判断字面
 
 ### 重打/升级后
 1) `node apply-all.cjs`  2) 安装插件（可选）  3) 重启 dsh web
+
+### v4（还原说明）：token-meter 实验整体还原
+前几轮“上下文计量显示修复”（跳 reasoning 计价/投影版本+1/历史钳制/0-压力守卫）引发多起连锁问题
+（加载失败、总量 0k、口径双向漂移），已**整体还原为官方 @deepseek-ai/dsh-token-meter 0.1.2-rc.1**
+（5 个文件与 registry tarball 逐字节一致）。本包不再包含该子补丁。
+保留的功能补丁：qwen-thinking-no-replay（运行时白名单）、compaction-summary-no-thinking(low)、
+max-tokens-floor。触发与显示回到官方语义（“对话详情”仍会按官方口径含存储思考，与 provider 总量
+存在定义差，属官方行为）。

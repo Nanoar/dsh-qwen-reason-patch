@@ -17,8 +17,7 @@ const SUB = [
   'qwen-thinking-no-replay',
   'compaction-summary-no-thinking',
   'max-tokens-floor',
-  'token-meter-skip-reasoning-home',
-];
+  ];
 const retarget = (process.env.QREASON_PROVIDER_IDS || '').trim();
 if (retarget && retarget.includes(',')) { console.error('QREASON_PROVIDER_IDS: 当前仅支持单个 provider id（多 id 需先改判断为成员列表）。'); process.exit(1); }
 if (!fs.existsSync(path.join(DSH_ROOT, 'node_modules'))) { console.error('DSH root not found: ' + DSH_ROOT); process.exit(1); }

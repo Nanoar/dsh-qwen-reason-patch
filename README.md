@@ -35,3 +35,15 @@ node apply-all.cjs [--dry-run]   # 一键检查/应用全部
 QREASON_PROVIDER_IDS=home2 node apply-all.cjs   # 应用时把所有判断字面量换成 home2
 ```
 > 现仅支持单个目标 id；多 id 需要把判断改成“成员列表”，可作为后续 PR。
+
+### v3：provider 白名单运行时化（env / 配置文件 / settings 命名空间）
+- 六处判断点已从字面量改为 `qreasonIds()` 读取：
+  1) `QREASON_PROVIDER_IDS=home,llm2`（多 id，逗号分隔，最优先）
+  2) `$DSH_HOME/qwen-reason.json` → `{"providers":["home"]}`（次优先）
+  3) 缺省 `["home"]`
+- 随包插件 `qwen-reason-settings-plugin/`：把 `qwenReason.providers` 注册进 DSH settings
+  并在变更时镜像到 `$DSH_HOME/qwen-reason.json`（安装见其 README-install.md）。
+- GUI 设置面板客户端半部（settings.section）计划按 force-compact 模式二期补上并推送。
+
+### 重打/升级后
+1) `node apply-all.cjs`  2) 安装插件（可选）  3) 重启 dsh web

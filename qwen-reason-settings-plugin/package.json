@@ -1,0 +1,11 @@
+{
+  "name": "@nanoar/dsh-qwen-reason-settings",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./index.js",
+  "files": ["index.js"],
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" }
+  }
+}

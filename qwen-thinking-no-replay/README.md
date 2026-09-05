@@ -8,7 +8,7 @@ pi-ai 每轮把上一轮 assistant 的思考（reasoning_content）逐轮回放�
 + 模型重复输出长思考 → 上下文被撑爆、生成更慢。Qwen 的旧思考确实走 reasoning_content 签名
 回传（已抓包证实）。
 
-## 补丁（v3 运行时白名单，注入 3 处）
+## 补丁（运行时白名单，注入 3 处）
 文件：`<DSH_ROOT>/node_modules/@earendil-works/pi-ai/dist/api/openai-completions.js`
 1. 顶部加 `import { existsSync as qf_e, readFileSync as qf_r } from "node:fs";`
 2. `buildParams` 前加 `qreasonIds()`（读 `QREASON_PROVIDER_IDS` env → `$DSH_HOME/qwen-reason.json`

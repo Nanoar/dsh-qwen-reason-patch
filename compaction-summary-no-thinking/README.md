@@ -10,7 +10,7 @@
 官方 `dsh-compaction-basic` 的摘要 LLM 调用不带 reasoning 控制，本地 Qwen APEX 全强度思考
 把输出预算（默认 8192）吃光 → 截断/无文本。
 
-## 补丁（v3，注入 3 处，仅白名单内 provider）
+## 补丁（注入 3 处，仅白名单内 provider）
 文件：`<DSH_ROOT>/node_modules/@deepseek-ai/dsh-compaction-basic/lib/index.js`
 1. 顶部加 aliased fs import。
 2. `summarizeWithLlm` 前加 `qreasonIds()`（env / `$DSH_HOME/qwen-reason.json` / 缺省 `["home"]`）。

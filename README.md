@@ -18,7 +18,7 @@ node apply-all.cjs [DSH_ROOT] [--dry-run]   # 一键检查/应用全部
 # 应用后必须重启 dsh web
 ```
 
-## provider 运行时白名单（v3）
+## provider 运行时白名单
 `qwen-thinking-no-replay` 与 `compaction-summary-no-thinking` 共用 `qreasonIds()` 运行时白名单，
 不再把 provider id 硬编码进补丁。判定优先级：
 1. `QREASON_PROVIDER_IDS=home,llm2`（多 id，逗号分隔，最优先）

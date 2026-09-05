@@ -9,7 +9,7 @@
 | qwen-thinking-no-replay | pi-ai `dist/api/openai-completions.js` | 旧思考不再回放上 wire（省上下文），运行时白名单 |
 | compaction-summary-no-thinking | dsh-compaction-basic `lib/index.js` | 压缩摘要思考降档 `reasoningEffort:"low"` |
 | max-tokens-floor | pi-ai `dist/api/openai-completions.js` | ≤256 病态输出上限改写为模型声明值（修 1-token 停摆） |
-| token-meter-exclude-thinking | dsh-token-meter `lib/index.js` | 压缩触发阈值只算可见上下文，剔除瞬态思考 |
+| token-meter-exclude-thinking | dsh-token-meter `lib/index.js` | 压缩触发阈值对 home 剔除瞬态思考（home 路由判定，云端不计入） |
 
 ## 使用
 ```sh
@@ -19,7 +19,7 @@ node apply-all.cjs [DSH_ROOT] [--dry-run]   # 一键检查/应用全部
 ```
 
 ## provider 运行时白名单
-`qwen-thinking-no-replay` 与 `compaction-summary-no-thinking` 共用 `qreasonIds()` 运行时白名单，
+`qwen-thinking-no-replay`、`compaction-summary-no-thinking` 与 `token-meter-exclude-thinking` 共用 `qreasonIds()` 运行时白名单，
 不再把 provider id 硬编码进补丁。判定优先级：
 1. `QREASON_PROVIDER_IDS=home,llm2`（多 id，逗号分隔，最优先）
 2. `$DSH_HOME/qwen-reason.json` → `{"providers":["home"]}`
@@ -28,11 +28,10 @@ node apply-all.cjs [DSH_ROOT] [--dry-run]   # 一键检查/应用全部
 要改目标 provider：设 env 或写 json 即可，**无需改代码**。
 （可选的 settings 面板镜像见 `qwen-reason-settings-plugin/`，非必需。）
 
-## ⚠️ 关键前提：token-meter-exclude-thinking 依赖"思考不回放"
-`token-meter-exclude-thinking` 把瞬态思考剔除出压缩阈值，其正确性建立在
-**home 思考不回放**（由 `qwen-thinking-no-replay` 保证）之上。若将来改为回放历史思考
-（让模型跨轮引用自身推理），思考会持久化进上下文，需同步**回退**该子补丁，否则会低估
-真实占用、有溢出风险。
+## ⚠️ 前提：home 思考不回放
+`token-meter-exclude-thinking` 按 `qreasonIds()` 只对 home 剔除思考，正确性建立在
+**home 思考不回放**（由 `qwen-thinking-no-replay` 保证）之上。云端模型会回放思考，属真实持久
+上下文，故不被剔除。若将来让 home 也回放历史思考，需重审该子补丁，否则会低估真实占用、有溢出风险。
 
 ## 重打
 任何 dsh / node_modules 升级会覆盖上述 core 文件 → 重跑 `node apply-all.cjs` 后重启 dsh web。

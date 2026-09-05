@@ -1,57 +1,39 @@
 # qwen-reason-patch — 本地 Qwen（可访问自身思考链）优化补丁合集
 
-目标模型：经 llm provider **home** 路由的本地 llama.cpp/Qwen3.8-27B-APEX-I-Mini
-（65K 窗口、思考链长、串行）。四组改动全部只作用于 home 源；云端 deepseek 不受影响。
+目标模型：经 llm provider **home** 路由的本地 llama.cpp / Qwen3.8-27B-APEX-I-Mini
+（65K 窗口、Q8KV、思考链长、串行）。所有改动只作用于 home 源；云端 deepseek 不受影响。
 
-## 包含的子补丁（顺序即依赖顺序）
+## 包含的子补丁（4 个，均幂等）
 | 子补丁 | 文件 | 作用 |
 |---|---|---|
-| qwen-thinking-no-replay | pi-ai `dist/api/openai-completions.js` | 旧思考不再回放上 wire（省上下文） |
-| compaction-summary-no-thinking | dsh-compaction-basic `lib/index.js` | 压缩摘要思考降档 `reasoningEffort:"low"`（原 none 不被该模型声明） |
-| max-tokens-floor | pi-ai `dist/api/openai-completions.js` | ≤256 的病态输出上限改写为模型声明值（修 1-token 停摆） |
-| token-meter-skip-reasoning-home | dsh-token-meter 5 文件 | home 会话计价跳过未回放 reasoning（含历史重放钳制） |
-
-每个子目录含幂等 `apply-patches.cjs`（`--dry-run` 可预览）与 README。
+| qwen-thinking-no-replay | pi-ai `dist/api/openai-completions.js` | 旧思考不再回放上 wire（省上下文），运行时白名单 |
+| compaction-summary-no-thinking | dsh-compaction-basic `lib/index.js` | 压缩摘要思考降档 `reasoningEffort:"low"` |
+| max-tokens-floor | pi-ai `dist/api/openai-completions.js` | ≤256 病态输出上限改写为模型声明值（修 1-token 停摆） |
+| token-meter-exclude-thinking | dsh-token-meter `lib/index.js` | 压缩触发阈值只算可见上下文，剔除瞬态思考 |
 
 ## 使用
 ```sh
-node apply-all.cjs [--dry-run]   # 一键检查/应用全部
-# 或单个: node <子目录>/apply-patches.cjs [--dry-run]
+node apply-all.cjs [DSH_ROOT] [--dry-run]   # 一键检查/应用全部
+# 或单个: node <子目录>/apply-patches.cjs [DSH_ROOT] [--dry-run]
 # 应用后必须重启 dsh web
 ```
 
-## provider 白名单（重要）
-当前各子补丁的判断写死为 `home`（因为全部适配只针对该路由）。要扩展到其它 provider：
-- 每个子 `apply-patches.cjs` 里的 `"home"`/`'home'` 字面量就是判断点，可改成目标 id；
-- 或让本包支持“配置化”：见仓库讨论/PR 建议（把字面量改为读取
-  `$DSH_HOME` 下配置或 `process.env.QREASON_PROVIDERS` 的成员判断，一处改动即可覆盖 4 个补丁；
-  若要进 DSH 设置面板，则需要一个小插件注册 `settings` namespace 并让各补丁读取——成本高，尚未实现）。
+## provider 运行时白名单（v3）
+`qwen-thinking-no-replay` 与 `compaction-summary-no-thinking` 共用 `qreasonIds()` 运行时白名单，
+不再把 provider id 硬编码进补丁。判定优先级：
+1. `QREASON_PROVIDER_IDS=home,llm2`（多 id，逗号分隔，最优先）
+2. `$DSH_HOME/qwen-reason.json` → `{"providers":["home"]}`
+3. 缺省 `["home"]`
+
+要改目标 provider：设 env 或写 json 即可，**无需改代码**。
+（可选的 settings 面板镜像见 `qwen-reason-settings-plugin/`，非必需。）
+
+## ⚠️ 关键前提：token-meter-exclude-thinking 依赖"思考不回放"
+`token-meter-exclude-thinking` 把瞬态思考剔除出压缩阈值，其正确性建立在
+**home 思考不回放**（由 `qwen-thinking-no-replay` 保证）之上。若将来改为回放历史思考
+（让模型跨轮引用自身推理），思考会持久化进上下文，需同步**回退**该子补丁，否则会低估
+真实占用、有溢出风险。
 
 ## 重打
-任何 dsh/node_modules 升级会覆盖上述 core 文件 → 重跑 `node apply-all.cjs` 后重启。
-
-### 用环境变量切换 provider（无需改代码）
-```sh
-QREASON_PROVIDER_IDS=home2 node apply-all.cjs   # 应用时把所有判断字面量换成 home2
-```
-> 现仅支持单个目标 id；多 id 需要把判断改成“成员列表”，可作为后续 PR。
-
-### v3：provider 白名单运行时化（env / 配置文件 / settings 命名空间）
-- 六处判断点已从字面量改为 `qreasonIds()` 读取：
-  1) `QREASON_PROVIDER_IDS=home,llm2`（多 id，逗号分隔，最优先）
-  2) `$DSH_HOME/qwen-reason.json` → `{"providers":["home"]}`（次优先）
-  3) 缺省 `["home"]`
-- 随包插件 `qwen-reason-settings-plugin/`：把 `qwenReason.providers` 注册进 DSH settings
-  并在变更时镜像到 `$DSH_HOME/qwen-reason.json`（安装见其 README-install.md）。
-- GUI 设置面板客户端半部（settings.section）计划按 force-compact 模式二期补上并推送。
-
-### 重打/升级后
-1) `node apply-all.cjs`  2) 安装插件（可选）  3) 重启 dsh web
-
-### v4（还原说明）：token-meter 实验整体还原
-前几轮“上下文计量显示修复”（跳 reasoning 计价/投影版本+1/历史钳制/0-压力守卫）引发多起连锁问题
-（加载失败、总量 0k、口径双向漂移），已**整体还原为官方 @deepseek-ai/dsh-token-meter 0.1.2-rc.1**
-（5 个文件与 registry tarball 逐字节一致）。本包不再包含该子补丁。
-保留的功能补丁：qwen-thinking-no-replay（运行时白名单）、compaction-summary-no-thinking(low)、
-max-tokens-floor。触发与显示回到官方语义（“对话详情”仍会按官方口径含存储思考，与 provider 总量
-存在定义差，属官方行为）。
+任何 dsh / node_modules 升级会覆盖上述 core 文件 → 重跑 `node apply-all.cjs` 后重启 dsh web。
+各子补丁锚点按语义定位（函数名/签名串），尽量容忍 dist 行号漂移；锚点失配时会报错并提示手工补。

@@ -7,8 +7,8 @@
 | 子补丁 | 文件 | 作用 |
 |---|---|---|
 | qwen-thinking-no-replay | pi-ai `dist/api/openai-completions.js` | 旧思考不再回放上 wire（省上下文），运行时白名单 |
-| compaction-summary-no-thinking | dsh-compaction-basic `lib/index.js` | 压缩摘要思考降档 `reasoningEffort:"low"` |
-| max-tokens-floor | pi-ai `dist/api/openai-completions.js` | ≤256 病态输出上限改写为模型声明值（修 1-token 停摆） |
+| compaction-disable-thinking | dsh-compaction-basic + dsh-llm-pi-ai + pi-ai | 摘要关思考(`enable_thinking:false`)+maxTokens 取模型配置 |
+| home-exclude-thinking-context | pi-ai `estimate.js`+`simple-options.js`、dsh-token-meter | 思考不计入上下文估算（根治 1-token 停摆 + retainRatio 被思考吃掉） |
 | token-meter-exclude-thinking | dsh-token-meter `lib/index.js` | 压缩触发阈值对 home 剔除瞬态思考（home 路由判定，云端不计入） |
 
 ## 使用
@@ -19,7 +19,7 @@ node apply-all.cjs [DSH_ROOT] [--dry-run]   # 一键检查/应用全部
 ```
 
 ## provider 运行时白名单
-`qwen-thinking-no-replay`、`compaction-summary-no-thinking` 与 `token-meter-exclude-thinking` 共用 `qreasonIds()` 运行时白名单，
+`qwen-thinking-no-replay`、`compaction-disable-thinking` 与 `token-meter-exclude-thinking` 共用 `qreasonIds()` 运行时白名单，
 不再把 provider id 硬编码进补丁。判定优先级：
 1. `QREASON_PROVIDER_IDS=home,llm2`（多 id，逗号分隔，最优先）
 2. `$DSH_HOME/qwen-reason.json` → `{"providers":["home"]}`

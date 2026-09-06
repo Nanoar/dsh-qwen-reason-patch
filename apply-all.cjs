@@ -13,8 +13,8 @@ const DSH_ROOT = explicit || '/storage/Users/currentUser/AISpace/.devtools/npm-g
 const HERE = __dirname;
 const SUB = [
   'qwen-thinking-no-replay',
-  'compaction-summary-no-thinking',
-  'max-tokens-floor',
+  'compaction-disable-thinking',
+  'home-exclude-thinking-context',
   'token-meter-exclude-thinking',
 ];
 if (!fs.existsSync(path.join(DSH_ROOT, 'node_modules'))) { console.error('DSH root not found: ' + DSH_ROOT); process.exit(1); }

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* qwen-reason-patch master — 依次执行全部 4 个子补丁（幂等）。
+/* qwen-reason-patch master — 依次执行全部 5 个子补丁（幂等）。
  * 用法:
  *   node apply-all.cjs [DSH_ROOT] [--dry-run]
  * DSH_ROOT 缺省自动探测 npm-global/@deepseek-ai/dsh。 */
@@ -16,6 +16,7 @@ const SUB = [
   'compaction-disable-thinking',
   'home-exclude-thinking-context',
   'token-meter-exclude-thinking',
+  'qwen-toolcall-leak-retry',
 ];
 if (!fs.existsSync(path.join(DSH_ROOT, 'node_modules'))) { console.error('DSH root not found: ' + DSH_ROOT); process.exit(1); }
 let failed = 0;

@@ -3,13 +3,14 @@
 目标模型：经 llm provider **home** 路由的本地 llama.cpp / Qwen3.8-27B-APEX-I-Mini
 （65K 窗口、Q8KV、思考链长、串行）。所有改动只作用于 home 源；云端 deepseek 不受影响。
 
-## 包含的子补丁（4 个，均幂等）
+## 包含的子补丁（5 个，均幂等）
 | 子补丁 | 文件 | 作用 |
 |---|---|---|
 | qwen-thinking-no-replay | pi-ai `dist/api/openai-completions.js` | 旧思考不再回放上 wire（省上下文），运行时白名单 |
 | compaction-disable-thinking | dsh-compaction-basic + dsh-llm-pi-ai + pi-ai | 摘要关思考(`enable_thinking:false`)+maxTokens 取模型配置 |
 | home-exclude-thinking-context | pi-ai `estimate.js`+`simple-options.js`、dsh-token-meter | 思考不计入上下文估算（根治 1-token 停摆 + retainRatio 被思考吃掉） |
 | token-meter-exclude-thinking | dsh-token-meter `lib/index.js` | 压缩触发阈值对 home 剔除瞬态思考（home 路由判定，云端不计入） |
+| qwen-toolcall-leak-retry | dsh-llm-pi-ai `lib/index.js` | 纯 thinking 完成态归 EMPTY_RESPONSE → 自动重试（治 `</tool_call>` 漏标签静默停摆） |
 
 ## 使用
 ```sh
